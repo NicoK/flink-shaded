@@ -43,6 +43,13 @@ under the License.
             <artifactId>netty-all</artifactId>
             <version>${netty.version}</version>
         </dependency>
+
+        <!-- Netty's native openSSL support -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-boringssl-static</artifactId>
+            <version>2.0.20.Final</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -91,6 +98,11 @@ under the License.
                                 <move todir="${project.build.directory}/unpacked/META-INF/native" includeemptydirs="false">
                                     <fileset dir="${project.build.directory}/unpacked/META-INF/native"/>
                                     <mapper type="glob" from="libnetty_transport_native_epoll_x86_64.so" to="liborg_apache_flink_shaded_netty4_netty_transport_native_epoll_x86_64.so"/>
+                                </move>
+                                <echo message="renaming netty_tcnative library" />
+                                <move todir="${project.build.directory}/unpacked/META-INF/native" includeemptydirs="false">
+                                    <fileset dir="${project.build.directory}/unpacked/META-INF/native"/>
+                                    <mapper type="regexp" from="(lib)?netty_tcnative_(linux_x86_64.so|osx_x86_64.jnilib|windows_x86_64.dll)" to="\1org_apache_flink_shaded_netty4_netty_tcnative_\2"/>
                                 </move>
                                 <echo message="repackaging netty jar" />
                                 <jar destfile="${project.build.directory}/${artifactId}-${version}.jar" basedir="${project.build.directory}/unpacked" />
