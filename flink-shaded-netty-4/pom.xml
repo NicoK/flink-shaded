@@ -35,6 +35,7 @@ under the License.
 
     <properties>
         <netty.version>4.1.32.Final</netty.version>
+        <netty.tcnative.version>2.0.20.Final</netty.tcnative.version>
     </properties>
 
     <dependencies>
@@ -42,6 +43,13 @@ under the License.
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>${netty.version}</version>
+        </dependency>
+
+        <!-- Netty's native openSSL support -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative</artifactId>
+            <version>${netty.tcnative.version}</version>
         </dependency>
     </dependencies>
 
@@ -75,6 +83,63 @@ under the License.
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.1.1</version>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <artifactItems>
+                        <!-- native wrapper libraries linked dynamically to OpenSSL - we will extract and these below-->
+                        <artifactItem>
+                            <groupId>io.netty</groupId>
+                            <artifactId>netty-tcnative</artifactId>
+                            <version>${netty.tcnative.version}</version>
+                            <classifier>linux-x86_64</classifier>
+                            <type>jar</type>
+                            <overWrite>false</overWrite>
+                            <outputDirectory>${project.build.directory}/native_libs</outputDirectory>
+                        </artifactItem>
+                        <artifactItem>
+                            <groupId>io.netty</groupId>
+                            <artifactId>netty-tcnative</artifactId>
+                            <version>${netty.tcnative.version}</version>
+                            <classifier>linux-x86_64-fedora</classifier>
+                            <type>jar</type>
+                            <overWrite>false</overWrite>
+                            <outputDirectory>${project.build.directory}/native_libs</outputDirectory>
+                        </artifactItem>
+                        <artifactItem>
+                            <groupId>io.netty</groupId>
+                            <artifactId>netty-tcnative</artifactId>
+                            <version>${netty.tcnative.version}</version>
+                            <classifier>osx-x86_64</classifier>
+                            <type>jar</type>
+                            <overWrite>false</overWrite>
+                            <outputDirectory>${project.build.directory}/native_libs</outputDirectory>
+                        </artifactItem>
+                        <artifactItem>
+                            <groupId>io.netty</groupId>
+                            <artifactId>netty-tcnative</artifactId>
+                            <version>${netty.tcnative.version}</version>
+                            <classifier>windows-x86_64</classifier>
+                            <type>jar</type>
+                            <overWrite>false</overWrite>
+                            <outputDirectory>${project.build.directory}/native_libs</outputDirectory>
+                        </artifactItem>
+                    </artifactItems>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -92,6 +157,34 @@ under the License.
                                     <fileset dir="${project.build.directory}/unpacked/META-INF/native"/>
                                     <mapper type="glob" from="libnetty_transport_native_epoll_x86_64.so" to="liborg_apache_flink_shaded_netty4_netty_transport_native_epoll_x86_64.so"/>
                                 </move>
+                                <echo message="extracting netty_tcnative dynamically linked wrapper libraries" />
+
+                                <!-- Fix the dynamically linked native libraries in netty-tcnative -->
+                                <unzip src="${project.build.directory}/native_libs/netty-tcnative-${netty.tcnative.version}-linux-x86_64.jar" dest="${project.build.directory}/native_libs/unpacked/" />
+                                <move todir="${project.build.directory}/unpacked/META-INF/native" includeemptydirs="false">
+                                    <fileset dir="${project.build.directory}/native_libs/unpacked/META-INF/native"/>
+                                    <mapper type="glob" from="libnetty_tcnative.so" to="liborg_apache_flink_shaded_netty4_netty_tcnative_linux_x86_64.so"/>
+                                </move>
+                                <delete dir="${project.build.directory}/native_libs/unpacked/" />
+                                <unzip src="${project.build.directory}/native_libs/netty-tcnative-${netty.tcnative.version}-linux-x86_64-fedora.jar" dest="${project.build.directory}/native_libs/unpacked/" />
+                                <move todir="${project.build.directory}/unpacked/META-INF/native" includeemptydirs="false">
+                                    <fileset dir="${project.build.directory}/native_libs/unpacked/META-INF/native"/>
+                                    <mapper type="glob" from="libnetty_tcnative.so" to="liborg_apache_flink_shaded_netty4_netty_tcnative_linux_x86_64_fedora.so"/>
+                                </move>
+                                <delete dir="${project.build.directory}/native_libs/unpacked/" />
+                                <unzip src="${project.build.directory}/native_libs/netty-tcnative-${netty.tcnative.version}-osx-x86_64.jar" dest="${project.build.directory}/native_libs/unpacked/" />
+                                <move todir="${project.build.directory}/unpacked/META-INF/native" includeemptydirs="false">
+                                    <fileset dir="${project.build.directory}/native_libs/unpacked/META-INF/native"/>
+                                    <mapper type="glob" from="libnetty_tcnative.jnilib" to="liborg_apache_flink_shaded_netty4_netty_tcnative_osx_x86_64.jnilib"/>
+                                </move>
+                                <delete dir="${project.build.directory}/native_libs/unpacked/" />
+                                <unzip src="${project.build.directory}/native_libs/netty-tcnative-${netty.tcnative.version}-windows-x86_64.jar" dest="${project.build.directory}/native_libs/unpacked/" />
+                                <move todir="${project.build.directory}/unpacked/META-INF/native" includeemptydirs="false">
+                                    <fileset dir="${project.build.directory}/native_libs/unpacked/META-INF/native"/>
+                                    <mapper type="glob" from="netty_tcnative.dll" to="org_apache_flink_shaded_netty4_netty_tcnative_windows_x86_64.dll"/>
+                                </move>
+                                <delete dir="${project.build.directory}/native_libs/unpacked/" />
+
                                 <echo message="repackaging netty jar" />
                                 <jar destfile="${project.build.directory}/${artifactId}-${version}.jar" basedir="${project.build.directory}/unpacked" />
                             </target>
